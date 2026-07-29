@@ -3,6 +3,12 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+const { readJwtSecret } = require('./config');
+const { formatStartupMessage } = require('./startup-output');
+
+// Validate the authentication boundary before opening a database file.
+readJwtSecret(process.env);
+
 // Инициализация БД
 require('./database');
 
@@ -43,29 +49,5 @@ app.use((err, req, res, next) => {
 
 // Запуск сервера
 app.listen(PORT, () => {
-  console.log(`
-╔════════════════════════════════════════════╗
-║                                            ║
-║   🎓 ORTA STUDY Server                     ║
-║                                            ║
-║   Сервер запущен на порту ${PORT}           ║
-║   http://localhost:${PORT}                 ║
-║                                            ║
-║   📚 API Endpoints:                        ║
-║   - POST /api/auth/login                   ║
-║   - POST /api/auth/register                ║
-║   - GET  /api/auth/me                      ║
-║   - GET  /api/users                        ║
-║   - POST /api/users                        ║
-║   - GET  /api/leads                        ║
-║   - POST /api/leads                        ║
-║   - GET  /api/ai/chats                     ║
-║   - POST /api/ai/chat                      ║
-║                                            ║
-║   👤 Тестовые аккаунты:                    ║
-║   Админ: admin@orta.study / admin123       ║
-║   Продажи: sales@orta.study / sales123     ║
-║                                            ║
-╚════════════════════════════════════════════╝
-  `);
+  console.log(formatStartupMessage());
 });
