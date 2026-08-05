@@ -31,7 +31,7 @@ byte, and the canonical newline-terminated document.
   digest;
 - the lead ID and aggregate version;
 - a closed event type and an exact payload without direct contact content;
-- a database-resolved actor ID/role;
+- a database-resolved operator ID/role or the fixed public/system origin actor;
 - one millisecond-precision UTC timestamp.
 
 The public creation event contains only `status=new` and
@@ -66,15 +66,15 @@ The storage transaction must additionally prove that every assignment target
 currently has the `sales` role; the event records that resolved role as part of
 the assignment payload.
 
-## What later storage must guarantee
+## Storage transaction guarantees
 
-The SQLite implementation must update the lead projection, append exactly one
-event, and advance the singleton ledger head in the same `BEGIN IMMEDIATE`
-transaction. Commands use an expected aggregate version and a unique
-idempotency key. New IDs must come from a cryptographically secure random
-source and must never be derived from contact data; the event contract can
-validate their shape but cannot prove their entropy or opacity. Two contenders
-for one version cannot both commit.
+The SQLite implementation updates the lead projection, appends exactly one
+event, and advances the singleton ledger head in the same `BEGIN IMMEDIATE`
+transaction. Non-initial commands use an expected aggregate version, and every
+command uses a unique idempotency key. Command IDs must come from a
+cryptographically secure random source and must never be derived from contact
+data; the event contract can validate a command ID's shape but cannot prove its
+entropy or opacity. Two contenders for one version cannot both commit.
 
 Replay must independently verify canonical payloads, contiguous global
 sequences, every previous hash, every event hash, per-lead versions, state

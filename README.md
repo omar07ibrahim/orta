@@ -53,17 +53,21 @@ fails before a database file is opened.
 
 ## Integrity design in progress
 
-The repository now defines and tests the byte-level contract for an auditable
-lead workflow: bounded canonical JSON, domain-separated command and event
-hashes, closed envelopes without direct contact content, opaque idempotency
-IDs, actor/target binding, and a finite-state transition graph. Read the
-[workflow ledger contract](docs/workflow-ledger-contract.md) for the exact
-guarantees and explicit non-claims.
+The repository now defines and tests the byte-level contract and transactional
+SQLite storage for an auditable lead workflow: bounded canonical JSON,
+domain-separated command and event hashes, closed envelopes without direct
+contact content, opaque idempotency IDs, database-fresh role, auth-version, and
+assignment-target checks, version compare-and-swap, and guarded append-only
+history. Read the
+[event contract](docs/workflow-ledger-contract.md) and
+[storage design](docs/workflow-storage.md) for the exact guarantees and
+explicit non-claims.
 
-This contract is not wired into the HTTP routes yet. The next increments add
-transactional SQLite storage, replay verification, database-fresh
-authorization, concurrency tests, and reproducible evidence before the API can
-claim an operational audit trail.
+This boundary is explicitly disabled in the default database opener and is not
+wired into the HTTP routes yet. The next increments add
+independent replay verification, multi-process concurrency tests, route-level
+authorization, and reproducible evidence before the API can claim an
+operational audit trail.
 
 ## Explicit synthetic demo users
 
@@ -102,6 +106,11 @@ without a network call. The workflow contract tests additionally lock canonical
 bytes, golden hashes, command/event correlation, actor policy, transition
 policy, and hostile JavaScript object rejection.
 
+Storage integration tests additionally exercise WAL/FULL configuration,
+idempotent create and operator commands, fresh roles and auth versions, guarded
+head/event updates, all-or-nothing legacy migration, and rollback at each write
+boundary.
+
 ## Data and history boundary
 
 The runtime SQLite snapshot formerly tracked by the repository is removed from
@@ -112,7 +121,7 @@ rewrite history and makes no claim that historical objects were purged.
 
 ## Known limitations
 
-- There is no production migration strategy, rate limiting, audit trail, or
+- HTTP routes do not yet use workflow storage, and there is no rate limiting or
   encrypted-at-rest storage.
 - The AI route is a rule-based placeholder.
 - API input validation and authorization deserve a dedicated hardening pass

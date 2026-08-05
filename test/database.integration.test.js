@@ -40,6 +40,14 @@ test(
 
     assert.equal(userCount, 0);
     assert.equal(existsSync(databasePath), true);
+    assert.equal(
+      database
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'workflow_events'",
+        )
+        .get(),
+      undefined,
+    );
   },
 );
 

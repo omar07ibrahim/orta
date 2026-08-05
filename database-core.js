@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 const path = require("path");
 
 const { readDemoSeedConfig } = require("./config");
+const { initializeWorkflowSchema } = require("./workflow/ledger-schema");
 
 const DEFAULT_DATABASE_PATH = path.join(__dirname, "orta-study.db");
 
@@ -18,19 +19,38 @@ function resolveDatabasePath(environment = process.env) {
   return DEFAULT_DATABASE_PATH;
 }
 
-function initializeSchema(database) {
+function configureDatabase(database) {
+  database.pragma("foreign_keys = ON");
+  database.pragma("busy_timeout = 5000");
+  const journalMode = database.pragma("journal_mode = WAL", { simple: true });
+  database.pragma("synchronous = FULL");
+
+  if (
+    database.name !== ":memory:" &&
+    database.name !== "" &&
+    String(journalMode).toLowerCase() !== "wal"
+  ) {
+    throw new Error("SQLite WAL mode is required for file databases");
+  }
+}
+
+function initializeSchema(
+  database,
+  { enableWorkflowLedger = false, workflowOptions = {} } = {},
+) {
   database.exec(`
-    CREATE TABLE IF NOT EXISTS users (
+    CREATE TABLE IF NOT EXISTS main.users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       role TEXT NOT NULL CHECK(role IN ('admin', 'student', 'sales')),
       name TEXT NOT NULL,
       phone TEXT,
+      auth_version INTEGER NOT NULL DEFAULT 1 CHECK(auth_version > 0),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE TABLE IF NOT EXISTS leads (
+    CREATE TABLE IF NOT EXISTS main.leads (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       email TEXT,
@@ -39,12 +59,15 @@ function initializeSchema(database) {
       status TEXT DEFAULT 'new'
         CHECK(status IN ('new', 'contacted', 'converted', 'rejected')),
       assigned_to INTEGER,
+      workflow_version INTEGER NOT NULL DEFAULT 0
+        CHECK(workflow_version >= 0),
+      archived_at TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (assigned_to) REFERENCES users(id)
     );
 
-    CREATE TABLE IF NOT EXISTS ai_chats (
+    CREATE TABLE IF NOT EXISTS main.ai_chats (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
       message TEXT NOT NULL,
@@ -53,12 +76,16 @@ function initializeSchema(database) {
       FOREIGN KEY (user_id) REFERENCES users(id)
     );
 
-    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-    CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
-    CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
-    CREATE INDEX IF NOT EXISTS idx_leads_assigned ON leads(assigned_to);
-    CREATE INDEX IF NOT EXISTS idx_ai_chats_user ON ai_chats(user_id);
+    CREATE INDEX IF NOT EXISTS main.idx_users_email ON users(email);
+    CREATE INDEX IF NOT EXISTS main.idx_users_role ON users(role);
+    CREATE INDEX IF NOT EXISTS main.idx_leads_status ON leads(status);
+    CREATE INDEX IF NOT EXISTS main.idx_leads_assigned ON leads(assigned_to);
+    CREATE INDEX IF NOT EXISTS main.idx_ai_chats_user ON ai_chats(user_id);
   `);
+
+  if (enableWorkflowLedger) {
+    initializeWorkflowSchema(database, workflowOptions);
+  }
 }
 
 function seedSyntheticDemoUsers(database, seedConfig) {
@@ -67,10 +94,10 @@ function seedSyntheticDemoUsers(database, seedConfig) {
   }
 
   const findUser = database.prepare(
-    "SELECT id FROM users WHERE email = ?",
+    "SELECT id FROM main.users WHERE email = ?",
   );
   const insertUser = database.prepare(`
-    INSERT INTO users (email, password, role, name, phone)
+    INSERT INTO main.users (email, password, role, name, phone)
     VALUES (?, ?, ?, ?, ?)
   `);
 
@@ -99,8 +126,10 @@ function seedSyntheticDemoUsers(database, seedConfig) {
 }
 
 function openDatabase({
+  enableWorkflowLedger = false,
   filename = resolveDatabasePath(process.env),
   environment = process.env,
+  workflowOptions = {},
 } = {}) {
   // Validate the complete opt-in seed configuration before opening or
   // mutating a database file.
@@ -108,8 +137,8 @@ function openDatabase({
   const database = new Database(filename);
 
   try {
-    database.pragma("foreign_keys = ON");
-    initializeSchema(database);
+    configureDatabase(database);
+    initializeSchema(database, { enableWorkflowLedger, workflowOptions });
     seedSyntheticDemoUsers(database, seedConfig);
     return database;
   } catch (error) {
@@ -120,6 +149,7 @@ function openDatabase({
 
 module.exports = {
   DEFAULT_DATABASE_PATH,
+  configureDatabase,
   initializeSchema,
   openDatabase,
   resolveDatabasePath,
