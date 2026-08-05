@@ -133,8 +133,10 @@ mutation when the runtime is affected, malformed, or cannot report its version.
 The prerequisite addresses the upstream
 [WAL-reset defect](https://www.sqlite.org/wal.html#the_wal_reset_bug), fixed in
 [SQLite 3.51.3](https://sqlite.org/releaselog/3_51_3.html). It does not itself
-prove ORTA's multi-process behavior; process-race and crash-recovery evidence is
-a separate verification layer.
+prove ORTA's multi-process behavior; the separate
+[process-race and crash-recovery layer](workflow-concurrency.md) exercises the
+pinned runtime through independent connections and operating-system process
+termination.
 
 Startup validates the exact managed table and index definitions, replaces all
 managed triggers from source definitions, rejects unexpected triggers on
@@ -187,7 +189,7 @@ events.
 - Replay verifies stored history and projection consistency, but the unsigned
   local hash chain cannot authenticate a complete attacker-controlled rewrite;
   that threat requires an independently protected signed checkpoint.
-- Replay does not replace pending multi-process concurrency tests or prove
-  historical roles from the mutable current `users` table.
+- Replay does not replace the separate multi-process execution evidence or
+  prove historical roles from the mutable current `users` table.
 - SQLite WAL serializes writers for one database file; this is not a
   distributed consensus or multi-primary design.

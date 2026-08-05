@@ -68,8 +68,9 @@ compare-and-swap, guarded append-only history, and complete chain plus
 workflow-projection verification. Read the
 [event contract](docs/workflow-ledger-contract.md) and
 [storage design](docs/workflow-storage.md), then the
-[replay design](docs/workflow-replay.md), for the exact guarantees and explicit
-non-claims.
+[replay design](docs/workflow-replay.md) and
+[multi-process evidence](docs/workflow-concurrency.md), for the exact
+guarantees and explicit non-claims.
 
 The opted-in workflow boundary fails closed on SQLite runtimes affected by the
 WAL-reset corruption defect. The pinned driver embeds SQLite 3.53.4; activation
@@ -78,9 +79,11 @@ workflow state.
 
 This boundary is explicitly disabled in the default database opener and is not
 wired into the HTTP routes yet. Replay is an operator-invoked, read-only check;
-it does not activate the workflow or repair a database. The next increments add
-multi-process concurrency tests, route-level authorization, and reproducible
-evidence before the API can claim an operational audit trail.
+it does not activate the workflow or repair a database. Real two-process
+contention and `SIGKILL` tests now verify serialization, rollback at every write
+checkpoint, and lost-ack idempotency. Route-level authorization and
+reproducible operator evidence remain required before the API can claim an
+operational audit trail.
 
 ## Explicit synthetic demo users
 
@@ -137,6 +140,13 @@ read-only SQLite snapshot, compare workflow projections and ledger anchors,
 exercise UTF-8/UTF-16 storage and the legacy timestamp boundary, bound hostile
 copied values before driver transfer, and reject chain, event, projection, and
 database-integrity corruption without exposing contact content.
+
+Process integration tests run two independent Node.js workers against one WAL
+file, coordinate real in-transaction contention without scheduling sleeps, and
+verify exact chain/projection convergence. A 16-cell `SIGKILL` matrix covers
+create, claim, assign, and transition at all three write checkpoints plus the
+post-commit/pre-ack window. Each crash is first inspected through read-only
+replay; retries prove either one fresh commit or one idempotent replay.
 
 ## Data and history boundary
 
