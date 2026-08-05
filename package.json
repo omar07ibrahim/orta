@@ -11,11 +11,11 @@
     "check": "npm run syntax && npm test"
   },
   "engines": {
-    "node": ">=18"
+    "node": "22.x || 24.x"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^9.6.0",
+    "better-sqlite3": "13.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",

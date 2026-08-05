@@ -12,6 +12,7 @@ const {
 const {
   assertHeadMatchesEvents,
   assertNoProtectedTempObjects,
+  assertWalResetSafeSQLiteRuntime,
   clockTimestamp,
   defaultClock,
 } = require("./ledger-schema");
@@ -234,6 +235,7 @@ function createWorkflowStore(
   if (typeof clock !== "function" || typeof faultInjector !== "function") {
     reject("invalid_store_dependency");
   }
+  assertWalResetSafeSQLiteRuntime(database);
   assertNoProtectedTempObjects(database);
 
   const statements = {

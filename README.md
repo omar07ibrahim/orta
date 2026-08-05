@@ -20,15 +20,21 @@ current security boundary is intentionally strict:
 
 Requirements:
 
-- Node.js 18 or newer;
-- a platform supported by `better-sqlite3` (a native build toolchain may be
-  needed when a prebuilt binary is unavailable).
+- Node.js 22 or 24;
+- a bundled `better-sqlite3` N-API target: Linux (glibc or musl), macOS, or
+  Windows on x64 or arm64.
 
-Install the declared dependencies:
+Install the exact locked dependencies:
 
 ```bash
-npm install
+npm ci
 ```
+
+Project npm configuration disables dependency install scripts. The pinned
+`better-sqlite3` release includes its reviewed N-API binaries, so supported
+platforms do not need a download or native compilation hook during install.
+Any future dependency that requires an install script must be reviewed and
+enabled deliberately rather than executing implicitly.
 
 Create a local configuration file:
 
@@ -64,6 +70,11 @@ workflow-projection verification. Read the
 [storage design](docs/workflow-storage.md), then the
 [replay design](docs/workflow-replay.md), for the exact guarantees and explicit
 non-claims.
+
+The opted-in workflow boundary fails closed on SQLite runtimes affected by the
+WAL-reset corruption defect. The pinned driver embeds SQLite 3.53.4; activation
+and writer construction independently require a fixed runtime before touching
+workflow state.
 
 This boundary is explicitly disabled in the default database opener and is not
 wired into the HTTP routes yet. Replay is an operator-invoked, read-only check;

@@ -16,8 +16,12 @@ const {
   createLedgerEvent,
 } = require("../workflow/ledger-contract");
 const {
+  MINIMUM_WAL_RESET_SAFE_SQLITE_VERSION,
+  WAL_RESET_SAFE_SQLITE_BACKPORTS,
   WorkflowSchemaError,
+  assertWalResetSafeSQLiteRuntime,
   initializeWorkflowSchema,
+  isWalResetSafeSQLiteVersion,
 } = require("../workflow/ledger-schema");
 const {
   WorkflowStoreError,
@@ -120,6 +124,98 @@ function insertRawEvent(database, event) {
       canonicalJsonBytes(event).toString("utf8"),
     );
 }
+
+test("the workflow boundary accepts only WAL-reset-safe SQLite branches", () => {
+  for (const version of [
+    "3.44.6",
+    "3.44.7",
+    "3.50.7",
+    "3.50.8",
+    "3.51.3",
+    "3.53.4",
+    "4.0.0",
+  ]) {
+    assert.equal(isWalResetSafeSQLiteVersion(version), true, version);
+  }
+  for (const version of [
+    null,
+    3.53,
+    "",
+    "3.44.5",
+    "3.45.3",
+    "3.50.6",
+    "3.51.2",
+    "3.51.3.0",
+    `3.51.${"3".repeat(40)}`,
+  ]) {
+    assert.equal(isWalResetSafeSQLiteVersion(version), false, String(version));
+  }
+});
+
+test("the installed SQLite runtime carries the WAL-reset fix", (context) => {
+  const database = new Database(":memory:");
+  context.after(() => database.close());
+
+  const detected = database
+    .prepare("SELECT sqlite_version() AS version")
+    .get().version;
+  assert.equal(isWalResetSafeSQLiteVersion(detected), true);
+  assert.equal(assertWalResetSafeSQLiteRuntime(database), detected);
+});
+
+test("workflow activation rejects an affected runtime before schema mutation", (context) => {
+  const directory = mkdtempSync(path.join(tmpdir(), "orta-ledger-runtime-"));
+  const filename = path.join(directory, "workflow.sqlite");
+  const database = openDatabase({
+    filename,
+    environment: { ORTA_SEED_DEMO_USERS: "false" },
+  });
+  context.after(() => {
+    database.close();
+    rmSync(directory, { force: true, recursive: true });
+  });
+  database.function("sqlite_version", { deterministic: true }, () => "3.45.3");
+
+  assert.throws(
+    () => initializeWorkflowSchema(database),
+    (error) => {
+      assert.equal(error instanceof WorkflowSchemaError, true);
+      assert.equal(error.code, "sqlite_wal_reset_fix_required");
+      assert.deepEqual(error.details, {
+        minimum_version: MINIMUM_WAL_RESET_SAFE_SQLITE_VERSION,
+        safe_backports: WAL_RESET_SAFE_SQLITE_BACKPORTS,
+        sqlite_version: "3.45.3",
+      });
+      return true;
+    },
+  );
+  assert.equal(
+    database
+      .prepare(`
+        SELECT name
+        FROM main.sqlite_master
+        WHERE type = 'table' AND name = 'workflow_events'
+      `)
+      .get(),
+    undefined,
+  );
+});
+
+test("writer construction rechecks the SQLite runtime", (context) => {
+  const fixture = createFixture(context);
+  fixture.database.function(
+    "sqlite_version",
+    { deterministic: true },
+    () => "3.51.2",
+  );
+
+  assert.throws(
+    () => createWorkflowStore(fixture.database),
+    (error) =>
+      error instanceof WorkflowSchemaError &&
+      error.code === "sqlite_wal_reset_fix_required",
+  );
+});
 
 test("file databases enforce WAL/FULL settings and atomic create idempotency", (context) => {
   const { database, store } = createFixture(context);

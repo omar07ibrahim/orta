@@ -112,6 +112,30 @@ hash, and `(lead_id, version)` constraints. SQL triggers enforce:
 - the head can advance by exactly one only after that matching event exists;
 - the singleton head cannot be deleted or replaced.
 
+## SQLite runtime floor
+
+The workflow boundary requires a runtime carrying SQLite's WAL-reset fix before
+it installs a schema or constructs a writer. The accepted versions are SQLite
+3.51.3 or newer and the official 3.44.6 / 3.50.7 backport branches. The pinned
+`better-sqlite3` 13.0.2 package embeds SQLite 3.53.4 and requires Node.js 22 or
+newer; this project tests the current Node.js 22 and 24 LTS lines.
+The locked release bundles its N-API platform binaries, and project npm
+configuration disables dependency install scripts. The verification gate loads
+the published binary directly instead of invoking an implicit compiler or
+post-install downloader.
+
+This guard is deliberately scoped to the opted-in workflow schema and writer.
+It does not prevent the legacy runtime from opening a database, and it does not
+block the read-only replay tool from inspecting an older ledger. Activation and
+writer construction fail with `sqlite_wal_reset_fix_required` before a workflow
+mutation when the runtime is affected, malformed, or cannot report its version.
+
+The prerequisite addresses the upstream
+[WAL-reset defect](https://www.sqlite.org/wal.html#the_wal_reset_bug), fixed in
+[SQLite 3.51.3](https://sqlite.org/releaselog/3_51_3.html). It does not itself
+prove ORTA's multi-process behavior; process-race and crash-recovery evidence is
+a separate verification layer.
+
 Startup validates the exact managed table and index definitions, replaces all
 managed triggers from source definitions, rejects unexpected triggers on
 protected tables, and behaviorally probes required constraints. Matching

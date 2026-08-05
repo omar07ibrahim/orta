@@ -10,6 +10,9 @@ const {
 } = require("./ledger-contract");
 
 const WORKFLOW_SCHEMA_VERSION = 1;
+const MINIMUM_WAL_RESET_SAFE_SQLITE_VERSION = "3.51.3";
+const WAL_RESET_SAFE_SQLITE_BACKPORTS = Object.freeze(["3.44.6", "3.50.7"]);
+const SQLITE_VERSION_PATTERN = /^(\d{1,6})\.(\d{1,6})\.(\d{1,6})$/u;
 
 class WorkflowSchemaError extends Error {
   constructor(code, details = {}) {
@@ -22,6 +25,65 @@ class WorkflowSchemaError extends Error {
 
 function reject(code, details) {
   throw new WorkflowSchemaError(code, details);
+}
+
+function parseSQLiteVersion(version) {
+  if (typeof version !== "string" || version.length > 32) {
+    return null;
+  }
+  const match = SQLITE_VERSION_PATTERN.exec(version);
+  if (!match) {
+    return null;
+  }
+  return match.slice(1).map(Number);
+}
+
+function compareSQLiteVersions(left, right) {
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) {
+      return left[index] - right[index];
+    }
+  }
+  return 0;
+}
+
+function isWalResetSafeSQLiteVersion(version) {
+  const parsed = parseSQLiteVersion(version);
+  if (!parsed) {
+    return false;
+  }
+  const [major, minor, patch] = parsed;
+  if (major === 3 && minor === 44 && patch >= 6) {
+    return true;
+  }
+  if (major === 3 && minor === 50 && patch >= 7) {
+    return true;
+  }
+  return (
+    compareSQLiteVersions(parsed, [3, 51, 3]) >= 0
+  );
+}
+
+function assertWalResetSafeSQLiteRuntime(database) {
+  let detectedVersion = null;
+  try {
+    const value = database
+      .prepare("SELECT sqlite_version() AS version")
+      .get()?.version;
+    if (typeof value === "string" && value.length <= 32) {
+      detectedVersion = value;
+    }
+  } catch {
+    // Report one stable workflow error without leaking driver internals.
+  }
+  if (!isWalResetSafeSQLiteVersion(detectedVersion)) {
+    reject("sqlite_wal_reset_fix_required", {
+      minimum_version: MINIMUM_WAL_RESET_SAFE_SQLITE_VERSION,
+      safe_backports: WAL_RESET_SAFE_SQLITE_BACKPORTS,
+      sqlite_version: detectedVersion,
+    });
+  }
+  return detectedVersion;
 }
 
 function defaultClock() {
@@ -750,6 +812,7 @@ function initializeWorkflowSchema(
   if (typeof clock !== "function" || typeof commandIdGenerator !== "function") {
     reject("invalid_migration_dependency");
   }
+  assertWalResetSafeSQLiteRuntime(database);
   const migrate = database.transaction(() => {
     assertNoProtectedTempObjects(database);
     assertManagedSchemaOrigin(database);
@@ -830,13 +893,17 @@ function initializeWorkflowSchema(
 }
 
 module.exports = {
+  MINIMUM_WAL_RESET_SAFE_SQLITE_VERSION,
+  WAL_RESET_SAFE_SQLITE_BACKPORTS,
   WORKFLOW_SCHEMA_VERSION,
   WorkflowSchemaError,
   assertEveryLeadCovered,
   assertHeadMatchesEvents,
   assertNoProtectedTempObjects,
+  assertWalResetSafeSQLiteRuntime,
   clockTimestamp,
   defaultClock,
   defaultCommandIdGenerator,
   initializeWorkflowSchema,
+  isWalResetSafeSQLiteVersion,
 };
