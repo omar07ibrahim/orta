@@ -148,12 +148,22 @@ events.
 
 ## Current boundary
 
-- Replay currently verifies the latest event before each write; full
-  snapshot/reducer replay is the next increment.
+- Each write still verifies the current head and latest stored event before it
+  mutates state. The separate
+  [replay verifier](workflow-replay.md) performs an operator-invoked,
+  `O(events + leads)` reduction with the managed keys and indexes, covering the
+  complete chain and every current projection in one read-only snapshot, in
+  addition to SQLite's database-page integrity and foreign-key scans. It does
+  not repair, migrate, or activate a ledger.
 - Existing HTTP lead routes still use legacy direct SQL, so the default runtime
   does not install or activate the workflow tables and projection guards.
 - `archived_at` is reserved for a future event-backed archive workflow. The
   current event vocabulary has no archive action, so deletion must not be
   represented as an unaudited projection-only change.
+- Replay verifies stored history and projection consistency, but the unsigned
+  local hash chain cannot authenticate a complete attacker-controlled rewrite;
+  that threat requires an independently protected signed checkpoint.
+- Replay does not replace pending multi-process concurrency tests or prove
+  historical roles from the mutable current `users` table.
 - SQLite WAL serializes writers for one database file; this is not a
   distributed consensus or multi-primary design.

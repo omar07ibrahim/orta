@@ -53,21 +53,23 @@ fails before a database file is opened.
 
 ## Integrity design in progress
 
-The repository now defines and tests the byte-level contract and transactional
-SQLite storage for an auditable lead workflow: bounded canonical JSON,
-domain-separated command and event hashes, closed envelopes without direct
-contact content, opaque idempotency IDs, database-fresh role, auth-version, and
-assignment-target checks, version compare-and-swap, and guarded append-only
-history. Read the
+The repository now defines and tests the byte-level contract, transactional
+SQLite storage, and independent offline replay for an auditable lead workflow:
+bounded canonical JSON, domain-separated command and event hashes, closed
+envelopes without direct contact content, opaque idempotency IDs,
+database-fresh role, auth-version, and assignment-target checks, version
+compare-and-swap, guarded append-only history, and complete chain plus
+workflow-projection verification. Read the
 [event contract](docs/workflow-ledger-contract.md) and
-[storage design](docs/workflow-storage.md) for the exact guarantees and
-explicit non-claims.
+[storage design](docs/workflow-storage.md), then the
+[replay design](docs/workflow-replay.md), for the exact guarantees and explicit
+non-claims.
 
 This boundary is explicitly disabled in the default database opener and is not
-wired into the HTTP routes yet. The next increments add
-independent replay verification, multi-process concurrency tests, route-level
-authorization, and reproducible evidence before the API can claim an
-operational audit trail.
+wired into the HTTP routes yet. Replay is an operator-invoked, read-only check;
+it does not activate the workflow or repair a database. The next increments add
+multi-process concurrency tests, route-level authorization, and reproducible
+evidence before the API can claim an operational audit trail.
 
 ## Explicit synthetic demo users
 
@@ -110,6 +112,12 @@ Storage integration tests additionally exercise WAL/FULL configuration,
 idempotent create and operator commands, fresh roles and auth versions, guarded
 head/event updates, all-or-nothing legacy migration, and rollback at each write
 boundary.
+
+Replay integration tests independently rebuild every aggregate from an idle,
+read-only SQLite snapshot, compare workflow projections and ledger anchors,
+exercise UTF-8/UTF-16 storage and the legacy timestamp boundary, bound hostile
+copied values before driver transfer, and reject chain, event, projection, and
+database-integrity corruption without exposing contact content.
 
 ## Data and history boundary
 
