@@ -1,0 +1,202 @@
+{
+  "process_tests": {
+    "command": "node --test test/ledger-process.integration.test.js",
+    "contention": "pass",
+    "crash_cases": [
+      {
+        "operation": "create",
+        "stage": "after_event_insert",
+        "stage_index": 0,
+        "status": "pass"
+      },
+      {
+        "operation": "create",
+        "stage": "after_projection_update",
+        "stage_index": 1,
+        "status": "pass"
+      },
+      {
+        "operation": "create",
+        "stage": "after_head_update",
+        "stage_index": 2,
+        "status": "pass"
+      },
+      {
+        "operation": "create",
+        "stage": "after_commit_before_ack",
+        "stage_index": 3,
+        "status": "pass"
+      },
+      {
+        "operation": "claim",
+        "stage": "after_event_insert",
+        "stage_index": 0,
+        "status": "pass"
+      },
+      {
+        "operation": "claim",
+        "stage": "after_projection_update",
+        "stage_index": 1,
+        "status": "pass"
+      },
+      {
+        "operation": "claim",
+        "stage": "after_head_update",
+        "stage_index": 2,
+        "status": "pass"
+      },
+      {
+        "operation": "claim",
+        "stage": "after_commit_before_ack",
+        "stage_index": 3,
+        "status": "pass"
+      },
+      {
+        "operation": "assign",
+        "stage": "after_event_insert",
+        "stage_index": 0,
+        "status": "pass"
+      },
+      {
+        "operation": "assign",
+        "stage": "after_projection_update",
+        "stage_index": 1,
+        "status": "pass"
+      },
+      {
+        "operation": "assign",
+        "stage": "after_head_update",
+        "stage_index": 2,
+        "status": "pass"
+      },
+      {
+        "operation": "assign",
+        "stage": "after_commit_before_ack",
+        "stage_index": 3,
+        "status": "pass"
+      },
+      {
+        "operation": "transition",
+        "stage": "after_event_insert",
+        "stage_index": 0,
+        "status": "pass"
+      },
+      {
+        "operation": "transition",
+        "stage": "after_projection_update",
+        "stage_index": 1,
+        "status": "pass"
+      },
+      {
+        "operation": "transition",
+        "stage": "after_head_update",
+        "stage_index": 2,
+        "status": "pass"
+      },
+      {
+        "operation": "transition",
+        "stage": "after_commit_before_ack",
+        "stage_index": 3,
+        "status": "pass"
+      }
+    ],
+    "fail": 0,
+    "pass": 17,
+    "skipped": 0,
+    "total": 17
+  },
+  "runtime": {
+    "better_sqlite3": "13.0.2",
+    "node": "v22.23.1",
+    "node_abi": "127",
+    "sqlite": "3.53.4",
+    "wal_reset_safe": true
+  },
+  "schema": "orta.workflow-evidence.v1",
+  "workflow": {
+    "events": [
+      {
+        "actor_id": null,
+        "actor_role": "public",
+        "aggregate_id": 1,
+        "aggregate_version": 0,
+        "command_digest": "c2cbc3f6434bce0eeed52f14ab2e153d527fd5ef282506eecf0da7196d2b869a",
+        "command_id": "cmd_0000000000000000000000000000e001",
+        "event_hash": "19355a031531ae84d926c71806464a90987dab2f9838a472729caff8fc50f415",
+        "event_type": "lead.created",
+        "occurred_at": "2026-08-05T14:00:00.000Z",
+        "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "sequence": 1
+      },
+      {
+        "actor_id": 201,
+        "actor_role": "sales",
+        "aggregate_id": 1,
+        "aggregate_version": 1,
+        "command_digest": "3a9ecc8b1fe37409140974523b45dad3ec5a4124cd1851cce49fc30bd876a867",
+        "command_id": "cmd_0000000000000000000000000000e002",
+        "event_hash": "c96c377d902a4446ba5125bba0756290a9d9b844dad9b60414caee7dfc60ccf5",
+        "event_type": "lead.claimed",
+        "occurred_at": "2026-08-05T14:00:01.000Z",
+        "previous_hash": "19355a031531ae84d926c71806464a90987dab2f9838a472729caff8fc50f415",
+        "sequence": 2
+      },
+      {
+        "actor_id": 101,
+        "actor_role": "admin",
+        "aggregate_id": 1,
+        "aggregate_version": 2,
+        "command_digest": "78254d674b1e1f5962e95155c95c441d5ded29086b389da31db0ef52b5fbafd5",
+        "command_id": "cmd_0000000000000000000000000000e003",
+        "event_hash": "d1c2409a25ea2441e48d6a69bd751e9a3ca92cb57ff2d3507118e555a4608e3f",
+        "event_type": "lead.assigned",
+        "occurred_at": "2026-08-05T14:00:02.000Z",
+        "previous_hash": "c96c377d902a4446ba5125bba0756290a9d9b844dad9b60414caee7dfc60ccf5",
+        "sequence": 3
+      },
+      {
+        "actor_id": 202,
+        "actor_role": "sales",
+        "aggregate_id": 1,
+        "aggregate_version": 3,
+        "command_digest": "fe558ad8667f6aad3525ff35bf7ca0ac16e226ba3862b946823eee177edd92dd",
+        "command_id": "cmd_0000000000000000000000000000e004",
+        "event_hash": "1ff95cbaff660cd6d75166fb88063cde910bb13a9405cbfcf6e52c23aa68ef19",
+        "event_type": "lead.status_changed",
+        "occurred_at": "2026-08-05T14:00:03.000Z",
+        "previous_hash": "d1c2409a25ea2441e48d6a69bd751e9a3ca92cb57ff2d3507118e555a4608e3f",
+        "sequence": 4
+      }
+    ],
+    "foreign_key_check": [],
+    "head": {
+      "sequence": 4,
+      "event_hash": "1ff95cbaff660cd6d75166fb88063cde910bb13a9405cbfcf6e52c23aa68ef19"
+    },
+    "integrity_check": [
+      {
+        "integrity_check": "ok"
+      }
+    ],
+    "projections": [
+      {
+        "id": 1,
+        "status": "contacted",
+        "assigned_to": 202,
+        "workflow_version": 3,
+        "archived_at": null,
+        "created_at": "2026-08-05T14:00:00.000Z",
+        "updated_at": "2026-08-05T14:00:03.000Z"
+      }
+    ],
+    "replay": {
+      "aggregate_count": 1,
+      "event_count": 4,
+      "head": {
+        "event_hash": "1ff95cbaff660cd6d75166fb88063cde910bb13a9405cbfcf6e52c23aa68ef19",
+        "sequence": 4
+      },
+      "schema_version": 1
+    }
+  }
+}

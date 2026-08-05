@@ -4,6 +4,13 @@ ORTA Study API is a small local Express and SQLite prototype for user, lead,
 and chat workflows. The chat route currently returns deterministic,
 keyword-based responses; it does not call an external AI provider.
 
+![Verified ORTA runtime and workflow evidence](docs/assets/runtime-evidence.png)
+
+The scorecard above is generated from the loaded native runtime, an executed
+17-test process suite, and an independently replayed SQLite ledger. Its
+[machine-readable source and regeneration contract](docs/visual-evidence.md)
+are committed beside the image.
+
 This repository is an early backend prototype, not a production service. The
 current security boundary is intentionally strict:
 
@@ -17,6 +24,8 @@ current security boundary is intentionally strict:
   files are ignored by Git.
 
 ## Local setup
+
+![Clean checkout to verified evidence workflow](docs/assets/evidence-workflow.svg)
 
 Requirements:
 
@@ -77,6 +86,13 @@ WAL-reset corruption defect. The pinned driver embeds SQLite 3.53.4; activation
 and writer construction independently require a fixed runtime before touching
 workflow state.
 
+![Workflow write path, SQLite boundary, and independent replay](docs/assets/workflow-architecture.svg)
+
+The solid path is the implemented single-file write boundary; the dashed path
+is independent read-only verification. The diagram keeps the current HTTP
+route boundary visible rather than implying an integration that does not yet
+exist.
+
 This boundary is explicitly disabled in the default database opener and is not
 wired into the HTTP routes yet. Replay is an operator-invoked, read-only check;
 it does not activate the workflow or repair a database. Real two-process
@@ -84,6 +100,12 @@ contention and `SIGKILL` tests now verify serialization, rollback at every write
 checkpoint, and lost-ack idempotency. Route-level authorization and
 reproducible operator evidence remain required before the API can claim an
 operational audit trail.
+
+![Four-event ledger chain and replayed final projection](docs/assets/ledger-chain.png)
+
+The event hashes, actors, versions, final projection, and head in this figure
+come from a freshly executed workflow. Direct contact fields never enter the
+ledger evidence.
 
 ## Explicit synthetic demo users
 
@@ -147,6 +169,22 @@ verify exact chain/projection convergence. A 16-cell `SIGKILL` matrix covers
 create, claim, assign, and transition at all three write checkpoints plus the
 post-commit/pre-ack window. Each crash is first inspected through read-only
 replay; retries prove either one fresh commit or one idempotent replay.
+
+![Observed process crash-recovery matrix](docs/assets/process-crash-matrix.png)
+
+![Canonical capture of the executed process test command](docs/assets/process-tests-cli.png)
+
+The matrix is a categorical proof grid rather than a performance heatmap: every
+cell is one observed crash case, and `PASS` is printed so the result does not
+depend on color. The terminal capture preserves executed test names and counts
+while omitting nondeterministic durations.
+
+![Animated explanation of verified process-crash recovery](docs/assets/crash-recovery.gif)
+
+The animation explains one verified rollback/retry path; it is not presented
+as a recording. Run `npm run evidence:generate` to rebuild every asset and
+`npm run evidence:check` to execute the source evidence again and byte-compare
+the committed outputs.
 
 ## Data and history boundary
 

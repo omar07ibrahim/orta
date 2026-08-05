@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node index.js",
     "runtime:verify": "node tools/verify-runtime.js",
-    "syntax": "node --check config.js && node --check database-core.js && node --check database.js && node --check index.js && node --check startup-output.js && node --check middleware/auth.js && node --check routes/auth.js && node --check routes/users.js && node --check routes/leads.js && node --check routes/ai.js && node --check tools/verify-runtime.js && node --check workflow/canonical-json.js && node --check workflow/ledger-contract.js && node --check workflow/ledger-schema.js && node --check workflow/ledger-store.js && node --check workflow/ledger-replay.js && node --check test/fixtures/workflow-process-worker.js && node --check test/canonical-json.test.js && node --check test/config.test.js && node --check test/database.integration.test.js && node --check test/ledger-contract.test.js && node --check test/ledger-store.integration.test.js && node --check test/ledger-process.integration.test.js && node --check test/ledger-replay.integration.test.js && node --check test/startup-output.test.js",
+    "evidence:generate": "node tools/generate-workflow-evidence.js",
+    "evidence:check": "node tools/generate-workflow-evidence.js --check",
+    "syntax": "node --check config.js && node --check database-core.js && node --check database.js && node --check index.js && node --check startup-output.js && node --check middleware/auth.js && node --check routes/auth.js && node --check routes/users.js && node --check routes/leads.js && node --check routes/ai.js && node --check tools/verify-runtime.js && node --check tools/workflow-evidence-renderer.js && node --check tools/generate-workflow-evidence.js && node --check workflow/canonical-json.js && node --check workflow/ledger-contract.js && node --check workflow/ledger-schema.js && node --check workflow/ledger-store.js && node --check workflow/ledger-replay.js && node --check test/fixtures/workflow-process-worker.js && node --check test/canonical-json.test.js && node --check test/config.test.js && node --check test/database.integration.test.js && node --check test/ledger-contract.test.js && node --check test/ledger-store.integration.test.js && node --check test/ledger-process.integration.test.js && node --check test/ledger-replay.integration.test.js && node --check test/startup-output.test.js",
     "test": "node --test test/*.test.js",
     "check": "npm run runtime:verify && npm run syntax && npm test"
   },
@@ -21,5 +23,9 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "gifenc": "1.0.3",
+    "pureimage": "0.4.18"
   }
 }

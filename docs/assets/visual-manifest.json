@@ -1,0 +1,45 @@
+{
+  "files": [
+    {
+      "bytes": 120915,
+      "path": "crash-recovery.gif",
+      "sha256": "fb909b5749c350de59480835bce08106e1c727855cd53cfef0a53b373c2804b8"
+    },
+    {
+      "bytes": 3314,
+      "path": "evidence-workflow.svg",
+      "sha256": "f8e6e9753e9fedb02cf21bbf2af160c945a512b08f8f0cb47eda6aaad614b8fc"
+    },
+    {
+      "bytes": 143097,
+      "path": "ledger-chain.png",
+      "sha256": "a652a619eefcab286c10b81115ff7971fcceaf8f6d9ce3a87edb28bfacd48bdc"
+    },
+    {
+      "bytes": 138986,
+      "path": "process-crash-matrix.png",
+      "sha256": "09e6f8f990c7f7bde5943726838e2a72587bb2bba90b83743e89cb88fd9c112f"
+    },
+    {
+      "bytes": 144916,
+      "path": "process-tests-cli.png",
+      "sha256": "22c7cbb04dd9c83b80c91e94784536e20739c3975dc5df800122e37298519252"
+    },
+    {
+      "bytes": 99495,
+      "path": "runtime-evidence.png",
+      "sha256": "1b95688d6f8bafd9c470ce64e80c69f6c7ec74e4e157ee44697494111fb823cb"
+    },
+    {
+      "bytes": 4196,
+      "path": "workflow-architecture.svg",
+      "sha256": "f6ddc94e081c4165a10a041c4e30ea8a76277a76260ab17a630138fa4663470d"
+    },
+    {
+      "bytes": 5799,
+      "path": "workflow-evidence.json",
+      "sha256": "656e2777087e74cedc5c49534f8905298aafa1ee563ccb6b4ef54245249b9df3"
+    }
+  ],
+  "schema": "orta.visual-manifest.v1"
+}
