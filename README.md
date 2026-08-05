@@ -110,6 +110,14 @@ Run the offline syntax and test suite:
 npm run check
 ```
 
+The check begins by printing machine-readable evidence for the actual Node,
+native ABI, `better-sqlite3`, and SQLite versions it loaded, including the
+WAL-reset safety decision. GitHub Actions performs a clean locked install and
+runs the same gate on Node.js 22 and 24; a separate job audits production
+dependencies. Workflow actions are pinned to reviewed immutable commit SHAs,
+credentials are not persisted after checkout, and every job has read-only
+repository permissions.
+
 Configuration tests use only Node's built-in test runner. Database integration
 tests use a fresh directory under the operating system's temporary directory
 and remove it afterward. They skip cleanly when the application dependencies
