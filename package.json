@@ -6,7 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node index.js",
-    "syntax": "node --check config.js && node --check database-core.js && node --check database.js && node --check index.js && node --check startup-output.js && node --check middleware/auth.js && node --check routes/auth.js && node --check routes/users.js && node --check routes/leads.js && node --check routes/ai.js && node --check test/config.test.js && node --check test/database.integration.test.js && node --check test/startup-output.test.js",
+    "syntax": "node --check config.js && node --check database-core.js && node --check database.js && node --check index.js && node --check startup-output.js && node --check middleware/auth.js && node --check routes/auth.js && node --check routes/users.js && node --check routes/leads.js && node --check routes/ai.js && node --check workflow/canonical-json.js && node --check workflow/ledger-contract.js && node --check test/canonical-json.test.js && node --check test/config.test.js && node --check test/database.integration.test.js && node --check test/ledger-contract.test.js && node --check test/startup-output.test.js",
     "test": "node --test test/*.test.js",
     "check": "npm run syntax && npm test"
   },

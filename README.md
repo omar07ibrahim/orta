@@ -51,6 +51,20 @@ Startup fails before a database file is opened or the server begins listening
 if `JWT_SECRET` is missing or too short. Invalid demo-seed configuration also
 fails before a database file is opened.
 
+## Integrity design in progress
+
+The repository now defines and tests the byte-level contract for an auditable
+lead workflow: bounded canonical JSON, domain-separated command and event
+hashes, closed envelopes without direct contact content, opaque idempotency
+IDs, actor/target binding, and a finite-state transition graph. Read the
+[workflow ledger contract](docs/workflow-ledger-contract.md) for the exact
+guarantees and explicit non-claims.
+
+This contract is not wired into the HTTP routes yet. The next increments add
+transactional SQLite storage, replay verification, database-fresh
+authorization, concurrency tests, and reproducible evidence before the API can
+claim an operational audit trail.
+
 ## Explicit synthetic demo users
 
 Demo accounts are off by default. To create the two reserved-domain identities
@@ -84,7 +98,9 @@ tests use a fresh directory under the operating system's temporary directory
 and remove it afterward. They skip cleanly when the application dependencies
 have not yet been installed; after `npm install`, they exercise schema
 initialization, opt-in seeding, idempotence, and fail-before-open behavior
-without a network call.
+without a network call. The workflow contract tests additionally lock canonical
+bytes, golden hashes, command/event correlation, actor policy, transition
+policy, and hostile JavaScript object rejection.
 
 ## Data and history boundary
 
@@ -99,6 +115,5 @@ rewrite history and makes no claim that historical objects were purged.
 - There is no production migration strategy, rate limiting, audit trail, or
   encrypted-at-rest storage.
 - The AI route is a rule-based placeholder.
-- Dependency installation is not yet locked by a committed lockfile.
 - API input validation and authorization deserve a dedicated hardening pass
   before any deployment.
