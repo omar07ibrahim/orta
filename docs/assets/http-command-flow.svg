@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="760" viewBox="0 0 1600 760" role="img" aria-labelledby="title desc">
+<title id="title">ORTA audited HTTP lead command path</title>
+<desc id="desc">Executed request path from bounded public and authenticated inputs through rate limiting, fresh JWT authorization, the workflow store, SQLite WAL, and independent replay.</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#2f66d0"/></marker></defs>
+<style>.t{font:700 35px DejaVu Sans,Arial,sans-serif;fill:#172238}.s{font:19px DejaVu Sans,Arial,sans-serif;fill:#5e6b81}.h{font:700 20px DejaVu Sans,Arial,sans-serif;fill:#172238}.b{font:16px DejaVu Sans,Arial,sans-serif;fill:#5e6b81}.m{font:15px DejaVu Sans Mono,monospace;fill:#234b96}.box{fill:#fff;stroke:#d5ddea;stroke-width:2}.a{stroke:#2f66d0;stroke-width:4;fill:none;marker-end:url(#arrow)}</style>
+<rect width="1600" height="760" fill="#f5f7fb"/>
+<text x="70" y="72" class="t">Audited HTTP command boundary</text>
+<text x="70" y="108" class="s">The solid path is executed by the evidence capture; replay reads the same SQLite snapshot independently.</text>
+<rect x="70" y="190" width="250" height="180" rx="18" class="box"/><text x="95" y="235" class="h">HTTP request</text><text x="95" y="276" class="b">exact JSON fields</text><text x="95" y="307" class="b">Idempotency-Key</text><text x="95" y="338" class="m">20 / 60s bounded gate</text>
+<path d="M320 280 H390" class="a"/>
+<rect x="400" y="190" width="270" height="180" rx="18" class="box"/><text x="425" y="235" class="h">Fresh authorization</text><text x="425" y="276" class="b">HS256 allow-list</text><text x="425" y="307" class="b">role + auth_version</text><text x="425" y="338" class="m">database-fresh claims</text>
+<path d="M670 280 H740" class="a"/>
+<rect x="750" y="190" width="270" height="180" rx="18" class="box"/><text x="775" y="235" class="h">Workflow store</text><text x="775" y="276" class="b">BEGIN IMMEDIATE</text><text x="775" y="307" class="b">CAS + idempotency</text><text x="775" y="338" class="m">no direct PATCH/DELETE</text>
+<path d="M1020 280 H1090" class="a"/>
+<rect x="1100" y="190" width="360" height="180" rx="18" class="box"/><text x="1125" y="235" class="h">SQLite WAL / FULL</text><text x="1125" y="276" class="b">event first + projection</text><text x="1125" y="307" class="b">atomic head advancement</text><text x="1125" y="338" class="m">3 events / head 3</text>
+<path d="M1280 370 V500 H870 V430" stroke="#c58a18" stroke-width="4" fill="none" marker-end="url(#arrow)"/>
+<rect x="590" y="500" width="560" height="150" rx="18" fill="#fff8e8" stroke="#e5bd68" stroke-width="2"/><text x="620" y="548" class="h">Independent admin replay</text><text x="620" y="588" class="b">integrity + foreign keys + event chain + reducer + projections</text><text x="620" y="622" class="m">observed: 3 events / head 3 · status verified</text>
+<text x="70" y="710" class="s">Captured on v22.23.1 / SQLite 3.53.4; synthetic reserved-domain input is excluded from the artifacts.</text>
+</svg>

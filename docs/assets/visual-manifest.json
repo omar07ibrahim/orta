@@ -11,6 +11,21 @@
       "sha256": "f8e6e9753e9fedb02cf21bbf2af160c945a512b08f8f0cb47eda6aaad614b8fc"
     },
     {
+      "bytes": 3153,
+      "path": "http-command-flow.svg",
+      "sha256": "449f3c8c86c66ce120a040851059e8f4e4840cf4496f0d939ca8d1d3fa80f3fd"
+    },
+    {
+      "bytes": 118593,
+      "path": "http-command-transcript.png",
+      "sha256": "3ab7da310425184a82f57f369b95a9a113181967da59391ce2cd8aad11525312"
+    },
+    {
+      "bytes": 1873,
+      "path": "http-route-evidence.json",
+      "sha256": "b78653a22e9ad8f3ac9ffceef00a16766990c7b91041ab6744cc99395de61be4"
+    },
+    {
       "bytes": 143097,
       "path": "ledger-chain.png",
       "sha256": "a652a619eefcab286c10b81115ff7971fcceaf8f6d9ce3a87edb28bfacd48bdc"
@@ -31,9 +46,9 @@
       "sha256": "1b95688d6f8bafd9c470ce64e80c69f6c7ec74e4e157ee44697494111fb823cb"
     },
     {
-      "bytes": 4196,
+      "bytes": 4256,
       "path": "workflow-architecture.svg",
-      "sha256": "f6ddc94e081c4165a10a041c4e30ea8a76277a76260ab17a630138fa4663470d"
+      "sha256": "a5fd81334ff127e8ec15b39cde77cb852c13a0d9ba9cbf272d19924810537b5d"
     },
     {
       "bytes": 5799,

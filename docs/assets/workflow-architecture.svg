@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="920" viewBox="0 0 1600 920" role="img" aria-labelledby="title desc">
   <title id="title">ORTA workflow ledger architecture</title>
-  <desc id="desc">Two independent Node workers serialize workflow writes through SQLite WAL while a read-only verifier independently replays events and compares the projection and ledger head.</desc>
+  <desc id="desc">HTTP commands and two independent Node workers serialize workflow writes through SQLite WAL while a read-only verifier independently replays events and compares the projection and ledger head.</desc>
   <style>
     .title{font:700 42px DejaVu Sans,Arial,sans-serif;fill:#172238}.sub{font:22px DejaVu Sans,Arial,sans-serif;fill:#5e6b81}.h{font:700 23px DejaVu Sans,Arial,sans-serif;fill:#172238}.p{font:18px DejaVu Sans,Arial,sans-serif;fill:#5e6b81}.mono{font:17px DejaVu Sans Mono,monospace;fill:#234b96}.box{fill:#fff;stroke:#d5ddea;stroke-width:2}.blue{fill:#e8efff;stroke:#2f66d0;stroke-width:3}.dark{fill:#101a2c}.darkh{font:700 23px DejaVu Sans,Arial,sans-serif;fill:#edf3ff}.darkp{font:18px DejaVu Sans,Arial,sans-serif;fill:#9babc3}.line{stroke:#2f66d0;stroke-width:4;fill:none;marker-end:url(#arrow)}.read{stroke:#c58a18;stroke-width:4;stroke-dasharray:12 9;fill:none;marker-end:url(#goldArrow)}
   </style>
@@ -11,7 +11,7 @@
   </defs>
   <rect width="1600" height="920" fill="#f5f7fb"/>
   <text x="70" y="78" class="title">Workflow ledger: write path and independent proof</text>
-  <text x="70" y="116" class="sub">Implemented boundary — HTTP routes remain deliberately disconnected</text>
+  <text x="70" y="116" class="sub">One enforced ledger boundary for HTTP commands and independent process evidence</text>
   <rect x="70" y="185" width="305" height="150" rx="18" class="box"/>
   <text x="105" y="235" class="h">Node worker A</text><text x="105" y="275" class="p">own native connection</text><text x="105" y="307" class="mono">busy_timeout per request</text>
   <rect x="70" y="390" width="305" height="150" rx="18" class="box"/>
@@ -29,7 +29,8 @@
   <text x="545" y="705" class="h">Read-only replay verifier</text><text x="545" y="747" class="p">canonical bytes + chain + reducer</text><text x="545" y="782" class="p">projection + integrity + foreign keys</text>
   <path d="M1170 590 V730 H940" class="read"/>
   <text x="1045" y="690" class="mono">independent snapshot</text>
-  <rect x="70" y="650" width="305" height="160" rx="20" fill="#fff3d4" stroke="#c58a18" stroke-width="2"/>
-  <text x="105" y="705" class="h">HTTP routes</text><text x="105" y="747" class="p">legacy SQL path</text><text x="105" y="782" class="mono">workflow opt-in: OFF</text>
+  <rect x="70" y="650" width="305" height="160" rx="20" class="blue"/>
+  <text x="105" y="705" class="h">HTTP command adapter</text><text x="105" y="747" class="p">rate limit + fresh JWT</text><text x="105" y="782" class="mono">workflow enforced: ON</text>
+  <path d="M375 730 H445 V535 H500" class="line"/>
   <text x="70" y="875" class="sub">Solid blue = serialized write path · dashed gold = read-only verification · no distributed-consensus claim</text>
 </svg>

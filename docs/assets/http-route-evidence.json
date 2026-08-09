@@ -1,0 +1,82 @@
+{
+  "ledger": {
+    "aggregate_count": 1,
+    "event_count": 3,
+    "head_sequence": 3,
+    "schema_version": 1,
+    "status": "verified"
+  },
+  "proofs": {
+    "changed_body_conflict": "idempotency_conflict",
+    "contact_echoed": false,
+    "direct_sql_bypass": "direct_lead_mutation_disabled",
+    "stale_token": "token_stale"
+  },
+  "rate_limit": {
+    "error": "public_lead_rate_limited",
+    "limit": 20,
+    "status": 429
+  },
+  "runtime": {
+    "better_sqlite3": "13.0.2",
+    "node": "v22.23.1",
+    "sqlite": "3.53.4"
+  },
+  "schema": "orta.http-route-evidence.v1",
+  "steps": [
+    {
+      "name": "create",
+      "request": "POST /api/leads",
+      "result": "lead.created · v0",
+      "status": 201
+    },
+    {
+      "name": "exact replay",
+      "request": "POST /api/leads",
+      "result": "same event · replayed=true",
+      "status": 200
+    },
+    {
+      "name": "changed body",
+      "request": "POST /api/leads",
+      "result": "idempotency_conflict",
+      "status": 409
+    },
+    {
+      "name": "sales claim",
+      "request": "POST /api/leads/1/claim",
+      "result": "lead.claimed · v1",
+      "status": 200
+    },
+    {
+      "name": "stale version",
+      "request": "POST /api/leads/1/claim",
+      "result": "version_conflict",
+      "status": 409
+    },
+    {
+      "name": "transition",
+      "request": "POST /api/leads/1/transition",
+      "result": "lead.status_changed · v2",
+      "status": 200
+    },
+    {
+      "name": "direct patch",
+      "request": "PATCH /api/leads/1",
+      "result": "direct_lead_mutation_disabled",
+      "status": 405
+    },
+    {
+      "name": "stale token",
+      "request": "GET /api/leads",
+      "result": "token_stale",
+      "status": 401
+    },
+    {
+      "name": "rate limit",
+      "request": "POST /api/leads",
+      "result": "public_lead_rate_limited",
+      "status": 429
+    }
+  ]
+}
