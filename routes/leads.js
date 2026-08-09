@@ -17,6 +17,7 @@ const {
 const {
   WorkflowStoreError,
   createWorkflowStore,
+  normalizeContact,
 } = require("../workflow/ledger-store");
 
 const router = express.Router();
@@ -187,15 +188,32 @@ router.post("/", enforceCreateRateLimit, (req, res) => {
   }
 
   try {
+    const contact = normalizeContact({
+      email: req.body.email,
+      message: req.body.message,
+      name: req.body.name,
+      phone: req.body.phone,
+    });
     const receipt = workflowStore.createLead({
       commandId: identifier,
-      contact: {
-        email: req.body.email,
-        message: req.body.message,
-        name: req.body.name,
-        phone: req.body.phone,
-      },
+      contact,
     });
+    if (receipt.replayed) {
+      const storedContact = database
+        .prepare(
+          "SELECT email, message, name, phone FROM main.leads WHERE id = ?",
+        )
+        .get(receipt.current_projection.id);
+      if (
+        !storedContact ||
+        storedContact.email !== contact.email ||
+        storedContact.message !== contact.message ||
+        storedContact.name !== contact.name ||
+        storedContact.phone !== contact.phone
+      ) {
+        throw new WorkflowStoreError("idempotency_conflict");
+      }
+    }
     res.location("/api/leads/" + receipt.current_projection.id);
     return sendReceipt(res, receipt, true);
   } catch (error) {
