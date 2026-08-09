@@ -575,6 +575,15 @@ function createWorkflowStore(
     return runImmediate(database, () => {
       const existing = findCreateReplay(input.commandId);
       if (existing) {
+        const projection = readLead(existing.aggregate.id, { active: false });
+        if (
+          projection.email !== input.contact.email ||
+          projection.message !== input.contact.message ||
+          projection.name !== input.contact.name ||
+          projection.phone !== input.contact.phone
+        ) {
+          reject("idempotency_conflict");
+        }
         return receipt(existing, true, { publicView: true });
       }
 

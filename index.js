@@ -1,53 +1,66 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-require('dotenv').config();
+"use strict";
 
-const { readJwtSecret } = require('./config');
-const { formatStartupMessage } = require('./startup-output');
+const cors = require("cors");
+const express = require("express");
+const path = require("path");
+require("dotenv").config();
 
-// Validate the authentication boundary before opening a database file.
+const { readJwtSecret } = require("./config");
+const { formatStartupMessage } = require("./startup-output");
+
 readJwtSecret(process.env);
+const database = require("./database");
 
-// Инициализация БД
-require('./database');
-
-// Импорт маршрутов
-const authRoutes = require('./routes/auth');
-const usersRoutes = require('./routes/users');
-const leadsRoutes = require('./routes/leads');
-const aiRoutes = require('./routes/ai');
+const aiRoutes = require("./routes/ai");
+const authRoutes = require("./routes/auth");
+const leadsRoutes = require("./routes/leads");
+const usersRoutes = require("./routes/users");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+app.disable("x-powered-by");
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "16kb", strict: true }));
+app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 
-// API маршруты
-app.use('/api/auth', authRoutes);
-app.use('/api/users', usersRoutes);
-app.use('/api/leads', leadsRoutes);
-app.use('/api/ai', aiRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/users", usersRoutes);
+app.use("/api/leads", leadsRoutes);
+app.use("/api/ai", aiRoutes);
 
-// Статические файлы (для продакшена)
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../dist')));
-
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../dist")));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../dist/index.html"));
   });
 }
 
-// Обработка ошибок
-app.use((err, req, res, next) => {
-  console.error('Ошибка сервера:', err);
-  res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+app.use((error, req, res, next) => {
+  void req;
+  void next;
+  if (error && error.type === "entity.too.large") {
+    return res.status(413).json({ error: "request_body_too_large" });
+  }
+  if (error instanceof SyntaxError && error && error.status === 400) {
+    return res.status(400).json({ error: "invalid_json" });
+  }
+  console.error("Unhandled request failure:", error && error.name);
+  return res.status(500).json({ error: "internal_server_error" });
 });
 
-// Запуск сервера
-app.listen(PORT, () => {
-  console.log(formatStartupMessage());
-});
+function start() {
+  return app.listen(PORT, () => {
+    console.log(formatStartupMessage());
+  });
+}
+
+if (require.main === module) {
+  start();
+}
+
+module.exports = {
+  app,
+  database,
+  start,
+};

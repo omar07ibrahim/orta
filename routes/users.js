@@ -13,7 +13,7 @@ router.get('/', requireRole('admin'), (req, res) => {
   try {
     const { role } = req.query;
 
-    let query = 'SELECT id, email, role, name, phone, created_at FROM users';
+    let query = 'SELECT id, email, role, name, phone, auth_version, created_at FROM users';
     const params = [];
 
     if (role) {
@@ -51,14 +51,14 @@ router.post('/', requireRole('admin'), (req, res) => {
       return res.status(409).json({ error: 'Пользователь с таким email уже существует' });
     }
 
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    const hashedPassword = bcrypt.hashSync(password, 12);
 
     const result = db.prepare(`
       INSERT INTO users (email, password, role, name, phone)
       VALUES (?, ?, ?, ?, ?)
     `).run(email, hashedPassword, role, name, phone || null);
 
-    const user = db.prepare('SELECT id, email, role, name, phone, created_at FROM users WHERE id = ?')
+    const user = db.prepare('SELECT id, email, role, name, phone, auth_version, created_at FROM users WHERE id = ?')
       .get(result.lastInsertRowid);
 
     res.status(201).json(user);
@@ -103,7 +103,7 @@ router.patch('/:id', requireRole('admin'), (req, res) => {
       params.push(phone);
     }
     if (password !== undefined) {
-      const hashedPassword = bcrypt.hashSync(password, 10);
+      const hashedPassword = bcrypt.hashSync(password, 12);
       updates.push('password = ?');
       params.push(hashedPassword);
     }
@@ -112,11 +112,12 @@ router.patch('/:id', requireRole('admin'), (req, res) => {
       return res.status(400).json({ error: 'Нет данных для обновления' });
     }
 
+    updates.push('auth_version = auth_version + 1');
     params.push(id);
 
     db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...params);
 
-    const updatedUser = db.prepare('SELECT id, email, role, name, phone, created_at FROM users WHERE id = ?')
+    const updatedUser = db.prepare('SELECT id, email, role, name, phone, auth_version, created_at FROM users WHERE id = ?')
       .get(id);
 
     res.json(updatedUser);

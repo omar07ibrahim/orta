@@ -2,4 +2,4 @@
 
 const { openDatabase } = require("./database-core");
 
-module.exports = openDatabase();
+module.exports = openDatabase({ enableWorkflowLedger: true });
