@@ -7,39 +7,46 @@ const database = require("../database");
 
 const JWT_SECRET = readJwtSecret(process.env);
 const TOKEN_ROLES = new Set(["admin", "sales", "student"]);
-const TOKEN_PATTERN =
-  /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/u;
 
 const findCurrentUser = database.prepare(
   "SELECT id, email, role, auth_version FROM main.users WHERE id = ?",
 );
 
-function authenticationFailure(res, code) {
-  return res.status(401).json({ error: code });
-}
-
 function positiveSafeInteger(value) {
   return Number.isSafeInteger(value) && value > 0;
 }
 
-function authenticateToken(req, res, next) {
-  const authorization = req.headers.authorization;
-  if (typeof authorization !== "string") {
-    return authenticationFailure(res, "access_token_required");
+function readBearerToken(value) {
+  if (
+    typeof value !== "string" ||
+    value.length <= 7 ||
+    value.length > 4_096 ||
+    value.slice(0, 7) !== "Bearer " ||
+    value.trim() !== value
+  ) {
+    return null;
   }
+  const token = value.slice(7);
+  const segments = token.split(".");
+  if (segments.length !== 3 || segments.some((segment) => segment === "")) {
+    return null;
+  }
+  return token;
+}
 
-  const match = TOKEN_PATTERN.exec(authorization);
-  if (!match) {
-    return authenticationFailure(res, "invalid_authorization_header");
+function authenticateToken(req, res, next) {
+  const token = readBearerToken(req.headers.authorization);
+  if (token === null) {
+    return res.status(401).json({ error: "invalid_authorization_header" });
   }
 
   let claims;
   try {
-    claims = jwt.verify(match[1], JWT_SECRET, {
+    claims = jwt.verify(token, JWT_SECRET, {
       algorithms: ["HS256"],
     });
   } catch {
-    return authenticationFailure(res, "token_invalid_or_expired");
+    return res.status(401).json({ error: "token_invalid_or_expired" });
   }
 
   if (
@@ -51,7 +58,7 @@ function authenticateToken(req, res, next) {
     typeof claims.email !== "string" ||
     !TOKEN_ROLES.has(claims.role)
   ) {
-    return authenticationFailure(res, "token_claims_invalid");
+    return res.status(401).json({ error: "token_claims_invalid" });
   }
 
   const user = findCurrentUser.get(claims.id);
@@ -61,7 +68,7 @@ function authenticateToken(req, res, next) {
     user.role !== claims.role ||
     user.auth_version !== claims.auth_version
   ) {
-    return authenticationFailure(res, "token_stale");
+    return res.status(401).json({ error: "token_stale" });
   }
 
   req.user = Object.freeze({
@@ -77,7 +84,7 @@ function requireRole(...roles) {
   const allowed = new Set(roles);
   return (req, res, next) => {
     if (!req.user) {
-      return authenticationFailure(res, "authentication_required");
+      return res.status(401).json({ error: "authentication_required" });
     }
     if (!allowed.has(req.user.role)) {
       return res.status(403).json({ error: "insufficient_permissions" });

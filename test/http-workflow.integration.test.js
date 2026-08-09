@@ -24,7 +24,7 @@ let sales;
 
 async function request(
   route,
-  { body, commandId, method = "GET", origin, token } = {},
+  { authorization, body, commandId, method = "GET", origin, token } = {},
 ) {
   const headers = {};
   if (body !== undefined) {
@@ -36,7 +36,9 @@ async function request(
   if (origin) {
     headers.origin = origin;
   }
-  if (token) {
+  if (authorization !== undefined) {
+    headers.authorization = authorization;
+  } else if (token) {
     headers.authorization = "Bearer " + token;
   }
   const response = await fetch(baseUrl + route, {
@@ -107,6 +109,29 @@ test("HTTP commands preserve authorization, idempotency, and replay", async () =
   assert.equal(
     allowedOrigin.headers.get("access-control-allow-origin"),
     "https://app.example.com",
+  );
+
+  const malformedBearer = await request("/api/leads", {
+    authorization: "Bearer a.b.c ",
+  });
+  assert.equal(malformedBearer.status, 401);
+  assert.equal(
+    malformedBearer.body.error,
+    "invalid_authorization_header",
+  );
+
+  const longInvalidEmail = await request("/api/auth/register", {
+    body: {
+      email: "a@" + "a.".repeat(159),
+      name: "Synthetic Registration",
+      password: "RegistrationPassphrase-2026!",
+    },
+    method: "POST",
+  });
+  assert.equal(longInvalidEmail.status, 400);
+  assert.equal(
+    longInvalidEmail.body.error,
+    "invalid_registration_fields",
   );
 
   const missingKey = await request("/api/leads", {

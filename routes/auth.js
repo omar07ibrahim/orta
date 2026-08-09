@@ -11,8 +11,6 @@ const {
 } = require("../middleware/auth");
 
 const router = express.Router();
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
-
 function exactBody(value, allowedKeys) {
   if (
     value === null ||
@@ -39,7 +37,24 @@ function boundedString(value, minimumBytes, maximumBytes) {
 
 function normalizedEmail(value) {
   const email = boundedString(value, 3, 320);
-  if (!email || !EMAIL_PATTERN.test(email)) {
+  if (!email) {
+    return null;
+  }
+  for (const character of email) {
+    if (character.trim() === "") {
+      return null;
+    }
+  }
+  const separator = email.indexOf("@");
+  const domain = separator < 0 ? "" : email.slice(separator + 1);
+  if (
+    separator <= 0 ||
+    separator !== email.lastIndexOf("@") ||
+    domain.length < 3 ||
+    domain.startsWith(".") ||
+    domain.endsWith(".") ||
+    !domain.includes(".")
+  ) {
     return null;
   }
   return email.toLowerCase();
