@@ -193,7 +193,7 @@ HTTP integration starts the real Express app on loopback with a fresh database,
 issues public and authenticated requests, checks status and failure mappings,
 proves contact-free public receipts, invalidates an auth version, exercises the
 20-request public window, and invokes independent admin replay. The complete
-hosted suite currently contains 75 passing tests on both Node.js lines.
+hosted suite currently contains 76 passing tests on both Node.js lines.
 
 Process integration tests run two independent Node.js workers against one WAL
 file, coordinate real in-transaction contention without scheduling sleeps, and
