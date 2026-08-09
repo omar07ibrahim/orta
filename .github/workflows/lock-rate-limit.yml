@@ -1,0 +1,49 @@
+name: Lock global rate limiter
+
+on:
+  push:
+    branches: [feat/auditable-workflow-ledger]
+    paths:
+      - .github/workflows/lock-rate-limit.yml
+
+permissions:
+  contents: write
+
+jobs:
+  lock:
+    if: github.event.head_commit.message == 'Lock the global request limiter'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the exact feature head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: feat/auditable-workflow-ledger
+          fetch-depth: 0
+      - name: Install exact verification Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22.23.1"
+          package-manager-cache: false
+      - name: Resolve only the declared lock graph
+        run: |
+          npm install --package-lock-only --ignore-scripts
+          test "$(git diff --name-only | wc -l)" -eq 1
+          test "$(git diff --name-only)" = "package-lock.json"
+      - name: Verify the clean locked graph
+        run: |
+          npm ci
+          npm run check
+          npm run evidence:check
+          npm audit --omit=dev
+      - name: Commit as Omar Ibrahim and push linearly
+        env:
+          GIT_AUTHOR_NAME: Omar Ibrahim
+          GIT_AUTHOR_EMAIL: 31526072+omar07ibrahim@users.noreply.github.com
+          GIT_COMMITTER_NAME: Omar Ibrahim
+          GIT_COMMITTER_EMAIL: 31526072+omar07ibrahim@users.noreply.github.com
+        run: |
+          git add -- package-lock.json
+          git diff --cached --quiet && exit 1
+          git commit -m "Lock express-rate-limit 8.6.2"
+          git push origin HEAD:feat/auditable-workflow-ledger

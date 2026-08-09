@@ -5,6 +5,7 @@ const test = require("node:test");
 
 const {
   SYNTHETIC_DEMO_USERS,
+  readCorsOrigins,
   readDemoSeedConfig,
   readJwtSecret,
 } = require("../config");
@@ -74,5 +75,40 @@ test("opt-in requires two distinct externally supplied passwords", () => {
         ORTA_DEMO_SALES_PASSWORD: "a".repeat(16),
       }),
     /distinct/,
+  );
+});
+
+test("browser origins are disabled by default and exactly allow-listed", () => {
+  assert.deepEqual(readCorsOrigins({}), []);
+  assert.deepEqual(
+    readCorsOrigins({
+      ORTA_ALLOWED_ORIGINS:
+        "https://app.example.com,http://127.0.0.1:3000",
+    }),
+    ["https://app.example.com", "http://127.0.0.1:3000"],
+  );
+
+  for (const configured of [
+    "*",
+    "https://app.example.com/",
+    "https://app.example.com/path",
+    "ftp://app.example.com",
+    "https://user@app.example.com",
+    "https://app.example.com,https://app.example.com",
+  ]) {
+    assert.throws(
+      () => readCorsOrigins({ ORTA_ALLOWED_ORIGINS: configured }),
+      /ORTA_ALLOWED_ORIGINS/,
+    );
+  }
+  assert.throws(
+    () =>
+      readCorsOrigins({
+        ORTA_ALLOWED_ORIGINS: Array.from(
+          { length: 11 },
+          (_, index) => "https://app" + index + ".example.com",
+        ).join(","),
+      }),
+    /at most 10/,
   );
 });

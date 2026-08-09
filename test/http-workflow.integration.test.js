@@ -10,6 +10,7 @@ const temporary = mkdtempSync(path.join(tmpdir(), "orta-http-workflow-"));
 process.env.JWT_SECRET =
   "http-workflow-test-secret-with-more-than-thirty-two-bytes";
 process.env.ORTA_DB_PATH = path.join(temporary, "workflow.sqlite");
+process.env.ORTA_ALLOWED_ORIGINS = "https://app.example.com";
 process.env.ORTA_SEED_DEMO_USERS = "true";
 process.env.ORTA_DEMO_ADMIN_PASSWORD = "AdminPassphrase-2026!";
 process.env.ORTA_DEMO_SALES_PASSWORD = "SalesPassphrase-2026!";
@@ -23,7 +24,7 @@ let sales;
 
 async function request(
   route,
-  { body, commandId, method = "GET", token } = {},
+  { body, commandId, method = "GET", origin, token } = {},
 ) {
   const headers = {};
   if (body !== undefined) {
@@ -31,6 +32,9 @@ async function request(
   }
   if (commandId) {
     headers["idempotency-key"] = commandId;
+  }
+  if (origin) {
+    headers.origin = origin;
   }
   if (token) {
     headers.authorization = "Bearer " + token;
@@ -87,6 +91,23 @@ test("HTTP commands preserve authorization, idempotency, and replay", async () =
     phone: "+1-555-0100",
   };
   const createCommand = "cmd_" + "01".padStart(32, "0");
+
+  const deniedOrigin = await request("/api/leads", {
+    origin: "https://untrusted.example",
+    token: admin.token,
+  });
+  assert.equal(deniedOrigin.status, 403);
+  assert.equal(deniedOrigin.body.error, "origin_not_allowed");
+
+  const allowedOrigin = await request("/api/leads", {
+    origin: "https://app.example.com",
+    token: admin.token,
+  });
+  assert.equal(allowedOrigin.status, 200);
+  assert.equal(
+    allowedOrigin.headers.get("access-control-allow-origin"),
+    "https://app.example.com",
+  );
 
   const missingKey = await request("/api/leads", {
     body: contact,

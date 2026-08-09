@@ -2,13 +2,15 @@
 
 const cors = require("cors");
 const express = require("express");
+const { rateLimit } = require("express-rate-limit");
 const path = require("path");
 require("dotenv").config();
 
-const { readJwtSecret } = require("./config");
+const { readCorsOrigins, readJwtSecret } = require("./config");
 const { formatStartupMessage } = require("./startup-output");
 
 readJwtSecret(process.env);
+const allowedOrigins = readCorsOrigins(process.env);
 const database = require("./database");
 
 const aiRoutes = require("./routes/ai");
@@ -20,7 +22,35 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.disable("x-powered-by");
-app.use(cors());
+app.use(
+  rateLimit({
+    identifier: "orta-global-http",
+    ipv6Subnet: 56,
+    legacyHeaders: false,
+    limit: 300,
+    message: { error: "request_rate_limited" },
+    passOnStoreError: false,
+    standardHeaders: "draft-8",
+    windowMs: 60_000,
+  }),
+);
+const corsMiddleware = cors({
+  allowedHeaders: ["Authorization", "Content-Type", "Idempotency-Key"],
+  credentials: false,
+  maxAge: 600,
+  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+  origin: true,
+});
+app.use((req, res, next) => {
+  const origin = req.get("Origin");
+  if (origin === undefined) {
+    return next();
+  }
+  if (!allowedOrigins.includes(origin)) {
+    return res.status(403).json({ error: "origin_not_allowed" });
+  }
+  return corsMiddleware(req, res, next);
+});
 app.use(express.json({ limit: "16kb", strict: true }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 

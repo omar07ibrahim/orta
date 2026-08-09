@@ -56,6 +56,11 @@ Copy the generated value into the ignored `.env` file as `JWT_SECRET`. Do not
 commit that value. The default database path in `.env.example` is local and
 ignored.
 
+Browser cross-origin access is disabled when ORTA_ALLOWED_ORIGINS is empty.
+For a browser client, set a comma-separated list of at most ten exact HTTP(S)
+origins, for example ORTA_ALLOWED_ORIGINS=https://app.example.com. Wildcards,
+paths, credentials, duplicates, and non-HTTP schemes fail startup validation.
+
 Start the API:
 
 ```bash
@@ -92,7 +97,7 @@ touched.
 
 ![Workflow write path, SQLite boundary, and independent replay](docs/assets/workflow-architecture.svg)
 
-The solid path is the implemented command boundary. Public requests first pass
+The solid path is the implemented command boundary. Public requests first pass a global request budget and
 the bounded in-process rate gate; authenticated requests additionally require
 a database-fresh JWT. Every accepted mutation then enters one BEGIN IMMEDIATE
 transaction that appends an event, updates the projection, and advances the
@@ -223,12 +228,14 @@ rewrite history and makes no claim that historical objects were purged.
 
 ## Known limitations
 
-- The public rate limiter is bounded and fail-closed within one process, but it
+- The global limiter and stricter public-create limiter are bounded and fail-closed within one process, but it
   is neither distributed nor durable across restarts.
 - SQLite storage is local and is not encrypted at rest by this application.
 - The AI route is an explicitly labelled keyword-based placeholder, not an LLM.
-- Default CORS behavior and the remaining user/chat request surfaces require a
-  deployment-specific hardening pass before internet exposure.
+- Cross-origin browser access is disabled by default and supports only a
+  bounded exact-origin allow-list; the remaining user/chat request surfaces
+  still require a deployment-specific validation pass before internet
+  exposure.
 - Replay proves internal consistency of one supplied snapshot; an
   attacker-controlled rewrite of the entire unsigned local chain is outside
   its trust claim.
