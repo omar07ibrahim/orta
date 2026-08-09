@@ -74,7 +74,7 @@ function roundedRect(context, x, y, width, height, radius, fill, stroke) {
 
 function renderTranscript(evidence) {
   const width = 1600;
-  const height = 1120;
+  const height = 1160;
   const image = PImage.make(width, height);
   const context = image.getContext("2d");
   context.fillStyle = COLORS.background;
@@ -92,7 +92,7 @@ function renderTranscript(evidence) {
     { color: "#5e6b81", size: 18 },
   );
 
-  roundedRect(context, 70, 160, 1460, 875, 20, COLORS.terminal, COLORS.line);
+  roundedRect(context, 70, 160, 1460, 930, 20, COLORS.terminal, COLORS.line);
   drawText(context, "$ npm run evidence:check", 105, 215, {
     color: COLORS.white,
     mono: true,

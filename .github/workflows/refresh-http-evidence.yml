@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   refresh:
-    if: github.event.head_commit.message == 'Generate real HTTP boundary evidence'
+    if: github.event.head_commit.message == 'Fix the HTTP evidence footer'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -36,13 +36,10 @@ jobs:
               git ls-files --others --exclude-standard
             } | sort -u
           )
-          test "${#changed[@]}" -eq 5
+          test "${#changed[@]}" -eq 2
           expected=(
-            docs/assets/http-command-flow.svg
             docs/assets/http-command-transcript.png
-            docs/assets/http-route-evidence.json
             docs/assets/visual-manifest.json
-            docs/assets/workflow-architecture.svg
           )
           test "${changed[*]}" = "${expected[*]}"
           npm run evidence:check
@@ -53,7 +50,7 @@ jobs:
           GIT_COMMITTER_NAME: Omar Ibrahim
           GIT_COMMITTER_EMAIL: 31526072+omar07ibrahim@users.noreply.github.com
         run: |
-          git add --             docs/assets/http-command-flow.svg             docs/assets/http-command-transcript.png             docs/assets/http-route-evidence.json             docs/assets/visual-manifest.json             docs/assets/workflow-architecture.svg
+          git add -- docs/assets/http-command-transcript.png docs/assets/visual-manifest.json
           git diff --cached --quiet && exit 1
-          git commit -m "Publish real HTTP boundary evidence"
+          git commit -m "Refresh unclipped HTTP evidence"
           git push origin HEAD:feat/auditable-workflow-ledger
