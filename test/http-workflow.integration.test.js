@@ -112,7 +112,7 @@ test("HTTP commands preserve authorization, idempotency, and replay", async () =
   );
 
   const malformedBearer = await request("/api/leads", {
-    authorization: "Bearer a.b.c ",
+    authorization: "Bearer a.b",
   });
   assert.equal(malformedBearer.status, 401);
   assert.equal(
