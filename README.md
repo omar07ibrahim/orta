@@ -66,40 +66,61 @@ Startup fails before a database file is opened or the server begins listening
 if `JWT_SECRET` is missing or too short. Invalid demo-seed configuration also
 fails before a database file is opened.
 
-## Integrity design in progress
+## Audited HTTP and integrity design
 
-The repository now defines and tests the byte-level contract, transactional
-SQLite storage, and independent offline replay for an auditable lead workflow:
-bounded canonical JSON, domain-separated command and event hashes, closed
-envelopes without direct contact content, opaque idempotency IDs,
-database-fresh role, auth-version, and assignment-target checks, version
-compare-and-swap, guarded append-only history, and complete chain plus
-workflow-projection verification. Read the
-[event contract](docs/workflow-ledger-contract.md) and
-[storage design](docs/workflow-storage.md), then the
-[replay design](docs/workflow-replay.md) and
-[multi-process evidence](docs/workflow-concurrency.md), for the exact
-guarantees and explicit non-claims.
+The application now routes every lead mutation through the transactional
+workflow store. Public creation requires a bounded Idempotency-Key, operator
+commands use explicit claim, assign, and transition endpoints, and legacy
+PATCH or DELETE mutation is rejected. Signed tokens are accepted only with
+HS256 and only while their email, role, and auth_version still match a fresh
+database row.
 
-The opted-in workflow boundary fails closed on SQLite runtimes affected by the
-WAL-reset corruption defect. The pinned driver embeds SQLite 3.53.4; activation
-and writer construction independently require a fixed runtime before touching
-workflow state.
+The byte-level ledger contract remains deliberately free of direct contact
+content: bounded canonical JSON, domain-separated command and event hashes,
+database-fresh actor and assignment checks, version compare-and-swap, guarded
+append-only history, and complete chain plus projection verification. Read the
+[event contract](docs/workflow-ledger-contract.md),
+[storage design](docs/workflow-storage.md),
+[replay design](docs/workflow-replay.md), and
+[multi-process evidence](docs/workflow-concurrency.md) for exact guarantees and
+non-claims.
+
+The enabled boundary fails closed on SQLite runtimes affected by the WAL-reset
+corruption defect. The pinned driver embeds SQLite 3.53.4; startup and writer
+construction independently require a fixed runtime before workflow state is
+touched.
 
 ![Workflow write path, SQLite boundary, and independent replay](docs/assets/workflow-architecture.svg)
 
-The solid path is the implemented single-file write boundary; the dashed path
-is independent read-only verification. The diagram keeps the current HTTP
-route boundary visible rather than implying an integration that does not yet
-exist.
+The solid path is the implemented command boundary. Public requests first pass
+the bounded in-process rate gate; authenticated requests additionally require
+a database-fresh JWT. Every accepted mutation then enters one BEGIN IMMEDIATE
+transaction that appends an event, updates the projection, and advances the
+ledger head.
 
-This boundary is explicitly disabled in the default database opener and is not
-wired into the HTTP routes yet. Replay is an operator-invoked, read-only check;
-it does not activate the workflow or repair a database. Real two-process
-contention and `SIGKILL` tests now verify serialization, rollback at every write
-checkpoint, and lost-ack idempotency. Route-level authorization and
-reproducible operator evidence remain required before the API can claim an
-operational audit trail.
+![Executed HTTP route transcript](docs/assets/http-command-transcript.png)
+
+This terminal capture comes from a fresh loopback Express server and SQLite WAL
+database. It records selected deterministic fields from real requests: exact
+replay, changed-body conflict, version conflict, stale-token rejection,
+direct-mutation rejection, and rate limiting. Tokens, contact fields, ports,
+timestamps, and raw bodies are excluded.
+
+A minimal command sequence is:
+
+~~~bash
+curl -X POST http://127.0.0.1:5000/api/leads   -H "Content-Type: application/json"   -H "Idempotency-Key: cmd_00000000000000000000000000000001"   --data-binary @synthetic-lead.json
+
+curl -X POST http://127.0.0.1:5000/api/leads/1/claim   -H "Authorization: Bearer $TOKEN"   -H "Content-Type: application/json"   -H "Idempotency-Key: cmd_00000000000000000000000000000002"   --data-binary "{\"expected_version\":0}"
+
+curl http://127.0.0.1:5000/api/leads/_workflow/replay   -H "Authorization: Bearer $ADMIN_TOKEN"
+~~~
+
+![Executed HTTP command and replay flow](docs/assets/http-command-flow.svg)
+
+The admin replay endpoint is read-only. It checks SQLite integrity, foreign
+keys, canonical events, the global hash chain, reducer state, projections, and
+the ledger head in one snapshot; it does not repair state.
 
 ![Four-event ledger chain and replayed final projection](docs/assets/ledger-chain.png)
 
@@ -163,6 +184,12 @@ exercise UTF-8/UTF-16 storage and the legacy timestamp boundary, bound hostile
 copied values before driver transfer, and reject chain, event, projection, and
 database-integrity corruption without exposing contact content.
 
+HTTP integration starts the real Express app on loopback with a fresh database,
+issues public and authenticated requests, checks status and failure mappings,
+proves contact-free public receipts, invalidates an auth version, exercises the
+20-request public window, and invokes independent admin replay. The complete
+hosted suite currently contains 75 passing tests on both Node.js lines.
+
 Process integration tests run two independent Node.js workers against one WAL
 file, coordinate real in-transaction contention without scheduling sleeps, and
 verify exact chain/projection convergence. A 16-cell `SIGKILL` matrix covers
@@ -196,8 +223,12 @@ rewrite history and makes no claim that historical objects were purged.
 
 ## Known limitations
 
-- HTTP routes do not yet use workflow storage, and there is no rate limiting or
-  encrypted-at-rest storage.
-- The AI route is a rule-based placeholder.
-- API input validation and authorization deserve a dedicated hardening pass
-  before any deployment.
+- The public rate limiter is bounded and fail-closed within one process, but it
+  is neither distributed nor durable across restarts.
+- SQLite storage is local and is not encrypted at rest by this application.
+- The AI route is an explicitly labelled keyword-based placeholder, not an LLM.
+- Default CORS behavior and the remaining user/chat request surfaces require a
+  deployment-specific hardening pass before internet exposure.
+- Replay proves internal consistency of one supplied snapshot; an
+  attacker-controlled rewrite of the entire unsigned local chain is outside
+  its trust claim.

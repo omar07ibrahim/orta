@@ -1,0 +1,59 @@
+name: Refresh HTTP evidence
+
+on:
+  push:
+    branches: [feat/auditable-workflow-ledger]
+    paths:
+      - .github/workflows/refresh-http-evidence.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.event.head_commit.message == 'Generate real HTTP boundary evidence'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the exact feature head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: feat/auditable-workflow-ledger
+          fetch-depth: 0
+      - name: Install exact evidence Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22.23.1"
+          package-manager-cache: false
+      - name: Install the locked dependency graph
+        run: npm ci
+      - name: Generate and constrain real HTTP evidence
+        run: |
+          npm run evidence:generate
+          mapfile -t changed < <(
+            {
+              git diff --name-only
+              git ls-files --others --exclude-standard
+            } | sort -u
+          )
+          test "${#changed[@]}" -eq 5
+          expected=(
+            docs/assets/http-command-flow.svg
+            docs/assets/http-command-transcript.png
+            docs/assets/http-route-evidence.json
+            docs/assets/visual-manifest.json
+            docs/assets/workflow-architecture.svg
+          )
+          test "${changed[*]}" = "${expected[*]}"
+          npm run evidence:check
+      - name: Commit as Omar Ibrahim and push linearly
+        env:
+          GIT_AUTHOR_NAME: Omar Ibrahim
+          GIT_AUTHOR_EMAIL: 31526072+omar07ibrahim@users.noreply.github.com
+          GIT_COMMITTER_NAME: Omar Ibrahim
+          GIT_COMMITTER_EMAIL: 31526072+omar07ibrahim@users.noreply.github.com
+        run: |
+          git add --             docs/assets/http-command-flow.svg             docs/assets/http-command-transcript.png             docs/assets/http-route-evidence.json             docs/assets/visual-manifest.json             docs/assets/workflow-architecture.svg
+          git diff --cached --quiet && exit 1
+          git commit -m "Publish real HTTP boundary evidence"
+          git push origin HEAD:feat/auditable-workflow-ledger

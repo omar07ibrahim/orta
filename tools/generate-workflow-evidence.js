@@ -25,6 +25,8 @@ const {
   isWalResetSafeSQLiteVersion,
 } = require("../workflow/ledger-schema");
 const { createWorkflowStore } = require("../workflow/ledger-store");
+const { runHttpEvidence } = require("./http-evidence");
+const { renderHttpEvidence } = require("./http-evidence-renderer");
 const {
   renderWorkflowEvidence,
 } = require("./workflow-evidence-renderer");
@@ -35,6 +37,9 @@ const EVIDENCE_NODE_VERSION = "v22.23.1";
 const EXPECTED_FILES = Object.freeze([
   "crash-recovery.gif",
   "evidence-workflow.svg",
+  "http-command-flow.svg",
+  "http-command-transcript.png",
+  "http-route-evidence.json",
   "ledger-chain.png",
   "process-crash-matrix.png",
   "process-tests-cli.png",
@@ -450,10 +455,22 @@ function compareGenerated(expectedDirectory, actualDirectory) {
 
 async function generate(directory) {
   const evidence = buildEvidence();
+  const httpEvidence = runHttpEvidence();
+  const fonts = resolveFonts(process.env);
   writeAtomic(path.join(directory, "workflow-evidence.json"), stableJson(evidence));
+  writeAtomic(
+    path.join(directory, "http-route-evidence.json"),
+    stableJson(httpEvidence),
+  );
   await renderWorkflowEvidence({
     evidence,
-    fonts: resolveFonts(process.env),
+    fonts,
+    outputDirectory: directory,
+    writeText: writeAtomic,
+  });
+  await renderHttpEvidence({
+    evidence: httpEvidence,
+    fonts,
     outputDirectory: directory,
     writeText: writeAtomic,
   });
